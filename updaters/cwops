@@ -27,7 +27,7 @@ lastUpdateNormalized=$(date +%Y%m%d)
 memberListHeader ${lastUpdateNormalized} > ${LISTS_DIR}/${memberFilename}
 
 # Process Body
-cat ${LISTS_DIR}/${downloadfile} |  awk -F"," 'NR>9 {print $3","$4",,"}' | sed 's/\"//g' >> ${LISTS_DIR}/${memberFilename}
+cat ${LISTS_DIR}/${downloadfile} |  awk -F"," 'NR>9 {print toupper($3)","$4",,"}' | sed 's/\"//g' >> ${LISTS_DIR}/${memberFilename}
 numberRecord=$(wc -l < ${LISTS_DIR}/${memberFilename})
 
 # Finalize

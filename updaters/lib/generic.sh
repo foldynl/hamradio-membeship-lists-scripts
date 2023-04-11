@@ -9,7 +9,7 @@ function memberListHeader()
 
 function downloadFile()
 { 
-    curl -A "user-agent-name QLog" -s "$1" --output ${LISTS_DIR}/${2}
+    curl -L -A "user-agent-name QLog" -s "$1" --output ${LISTS_DIR}/${2}
     echo $? 
 }
 
