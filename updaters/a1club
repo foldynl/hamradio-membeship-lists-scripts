@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+
+source lib/generic.sh
+### CONFIG
+
+memberFilename="a1club.csv"
+URL=https://a1club.org/roster/mbr_alph.txt
+shortDesc="A1Club"
+longDesc="A1 CLUB since 1998"
+### END OF CONFIG
+
+downloadfile="${memberFilename}.raw"
+
+# Download file
+downloadRet=$(downloadFile "${URL}" "${downloadfile}")
+
+if [ $downloadRet != 0 ]; then
+    echo "Cannot download a source file from ${URL}"
+    exit 1;
+fi
+
+# Process Header
+headerLine=$(head -n 1 ${LISTS_DIR}/${downloadfile})
+lastUpdate=$(echo "${headerLine}" | awk -F ',' '{print($3)}')
+lastUpdateNormalized=$(date -d "${lastUpdate}" +"%Y%m%d")
+
+memberListHeader ${lastUpdateNormalized} > ${LISTS_DIR}/${memberFilename}
+
+# Process Body
+cat ${LISTS_DIR}/${downloadfile} | awk 'NR>2 {print toupper($1) "," substr($2,1,length($2)-1) ",,"}'  >> ${LISTS_DIR}/${memberFilename}
+numberRecords=$(wc -l < ${LISTS_DIR}/${memberFilename})
+
+# Finalize
+rm ${LISTS_DIR}/${downloadfile}
+writeContentData "${shortDesc}" "${longDesc}" "${memberFilename}" "${lastUpdateNormalized}" "${numberRecords}"
+

@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+
+source lib/generic.sh
+
+### CONFIG
+
+memberFilename="lotw.csv"
+URL=https://lotw.arrl.org/lotw-user-activity.csv
+shortDesc="LoTW"
+longDesc="ARRL Logbook of the World"
+### END OF CONFIG
+
+downloadfile="${memberFilename}.raw"
+
+# Download file
+downloadRet=$(downloadFile "${URL}" "${downloadfile}")
+
+if [ $downloadRet != 0 ]; then
+    echo "Cannot download a source file from ${URL}"
+    exit 1;
+fi
+
+# Process Header
+lastUpdateNormalized=$(date +"%Y%m%d")
+
+memberListHeader ${lastUpdateNormalized} > ${LISTS_DIR}/${memberFilename}
+
+# Process Body
+cat ${LISTS_DIR}/${downloadfile} | awk -F"," '{print toupper($1) ",,,"}'  >> ${LISTS_DIR}/${memberFilename}
+numberRecord=$(wc -l < ${LISTS_DIR}/${memberFilename})
+
+# Finalize
+rm ${LISTS_DIR}/${downloadfile}
+writeContentData "${shortDesc}" "${longDesc}" "${memberFilename}" "${lastUpdateNormalized}" "${numberRecord}"
+

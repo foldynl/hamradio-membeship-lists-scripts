@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+
+source lib/generic.sh
+
+### CONFIG
+
+memberFilename="agcwdl.csv"
+URL=https://www.agcw.de/wp-content/persist/Mitglieder.csv
+shortDesc="AGCWDL"
+longDesc="Activity Group CW-DL"
+### END OF CONFIG
+
+downloadfile="${memberFilename}.raw"
+
+# Download file
+downloadRet=$(downloadFile "${URL}" "${downloadfile}")
+
+if [ $downloadRet != 0 ]; then
+    echo "Cannot download a source file from ${URL}"
+    exit 1;
+fi
+
+# Process Header
+headerLine=$(head -n 2 ${LISTS_DIR}/${downloadfile} | tail -n 1)
+lastUpdate=$(echo "${headerLine}" | awk '{print $3}' | sed 's/;//g')
+lastUpdateNormalized=$(date -d "${lastUpdate}" +"%Y%m%d")
+
+memberListHeader ${lastUpdateNormalized} > ${LISTS_DIR}/${memberFilename}
+
+# Process Body
+cat ${LISTS_DIR}/${downloadfile} |  awk -F';' 'NR>3 {print toupper($2) "," $1 ",,"}' >> ${LISTS_DIR}/${memberFilename}
+numberRecord=$(wc -l < ${LISTS_DIR}/${memberFilename})
+
+# Finalize
+rm ${LISTS_DIR}/${downloadfile}
+writeContentData "${shortDesc}" "${longDesc}" "${memberFilename}" "${lastUpdateNormalized}" "${numberRecord}"
+
