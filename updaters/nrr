@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+
+source lib/generic.sh
+
+### CONFIG
+
+memberFilename="nrr.csv"
+URL="https://docs.google.com/spreadsheets/d/e/2PACX-1vTjNA35XfXGHvn4q55Ll8AOutTqWjwcYFfBJezFBP6OfVAcUDc94eohKj9gSnakTDfqz3VmfgHgWSzK/pub?gid=997027111&single=true&output=tsv"
+shortDesc="NRR"
+longDesc="Novice Rig Roundup"
+### END OF CONFIG
+
+downloadfile="${memberFilename}.raw"
+
+# Download file
+downloadRet=$(downloadFile "${URL}" "${downloadfile}")
+
+if [ $downloadRet != 0 ]; then
+    echo "Cannot download a source file from ${URL}"
+    exit 1;
+fi
+
+# Process Header
+# Based on the web information, the records are updated at the end of each month
+lastUpdateNormalized=$(date +%Y%m%d)
+
+memberListHeader ${lastUpdateNormalized} > ${LISTS_DIR}/${memberFilename}
+
+# Process Body
+cat ${LISTS_DIR}/${downloadfile} | awk -F"\t" 'NR>1 {print toupper($3)","$1",,"}' |  sed -e 's/^[ \t]*//' >> ${LISTS_DIR}/${memberFilename}
+numberRecord=$(wc -l < ${LISTS_DIR}/${memberFilename})
+
+# Finalize
+rm ${LISTS_DIR}/${downloadfile}
+writeContentData "${shortDesc}" "${longDesc}" "${memberFilename}" "${lastUpdateNormalized}" "${numberRecord}"
+
