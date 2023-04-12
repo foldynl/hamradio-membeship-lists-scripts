@@ -27,7 +27,8 @@ lastUpdateNormalized=$(cat ${LISTS_DIR}/${downloadfile} | grep -oP "List of lice
 memberListHeader ${lastUpdateNormalized} > ${LISTS_DIR}/${memberFilename}
 
 # Process Body
-cat ${LISTS_DIR}/${downloadfile} | sed -n '/ZACATEK/, /KONEC/p' | sed -n '/No.\tCall\tName/,/<\//p' | awk 'NR>1 {if ($2!="") print $2","$1",,"}' >> ${LISTS_DIR}/${memberFilename}
+cat ${LISTS_DIR}/${downloadfile} | sed -n '/ZACATEK/, /KONEC/p' | sed -n '/No.\tCall\tName/,/<\//p' | awk 'NR>1 {if ($2!="") print toupper($2)","$1",,"}' >> ${LISTS_DIR}/${memberFilename}
+
 numberRecord=$(wc -l < ${LISTS_DIR}/${memberFilename})
 
 # Finalize
