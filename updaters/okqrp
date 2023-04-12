@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+
+source lib/generic.sh
+
+### CONFIG
+
+memberFilename="okqrp.csv"
+URL="http://okqrp.fud.cz/members.html"
+shortDesc="OKQRP"
+longDesc="OK QRP Club"
+### END OF CONFIG
+
+downloadfile="${memberFilename}.raw"
+
+# Download file
+downloadRet=$(downloadFile "${URL}" "${downloadfile}")
+
+if [ $downloadRet != 0 ]; then
+    echo "Cannot download a source file from ${URL}"
+    exit 1;
+fi
+
+# Process Header
+# Based on the web information, the records are updated at the end of each month
+lastUpdateNormalized=$(cat ${LISTS_DIR}/${downloadfile} | grep -oP "List of licensed members.*" | sed -r 's/.*\(([[:digit:]]{2})\/([[:digit:]]{2})\/([[:digit:]]{4})\).*/\3\2\1/')
+
+memberListHeader ${lastUpdateNormalized} > ${LISTS_DIR}/${memberFilename}
+
+# Process Body
+cat ${LISTS_DIR}/${downloadfile} | sed -n '/ZACATEK/, /KONEC/p' | sed -n '/No.\tCall\tName/,/<\//p' | awk 'NR>1 {if ($2!="") print $2","$1",,"}' >> ${LISTS_DIR}/${memberFilename}
+numberRecord=$(wc -l < ${LISTS_DIR}/${memberFilename})
+
+# Finalize
+rm ${LISTS_DIR}/${downloadfile}
+writeContentData "${shortDesc}" "${longDesc}" "${memberFilename}" "${lastUpdateNormalized}" "${numberRecord}"
+
