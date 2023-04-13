@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+
+source lib/generic.sh
+
+### CONFIG
+
+memberFilename="a1op.csv"
+URL="http://www.arrl.org/a-1-operator-club-roster"
+shortDesc="A1OP"
+longDesc="A-1 Operators Club "
+### END OF CONFIG
+
+# Process Header
+# Based on the web information, the records are updated at the end of each month
+lastUpdateNormalized=$(date -d "$(lynx --dump "${URL}/0" | grep "members as of" | sed -r 's/.* members as of (.*)/\1/g')" +%Y%m%d)
+
+TMPFILE=${LISTS_DIR}/a1op.tmp
+echo "" > ${TMPFILE}
+
+downloadfile="${memberFilename}.raw"
+
+for i in {0,1,2,3,4,5,6,7,8,9,DX}; do 
+
+   # Download file
+   downloadRet=$(downloadFile "${URL}/${i}" "${downloadfile}")
+
+   if [ $downloadRet != 0 ]; then
+       echo "Cannot download a source file from ${URL}"
+       rm ${TMPFILE}
+       rm ${LISTS_DIR}/${downloadfile}
+       exit 1;
+   fi
+
+   cat ${LISTS_DIR}/${downloadfile} | sed 's/&Oslash;/0/g' | lynx -stdin --nonumbers --dump | awk '/Call Sign[ ]+Name/{flag=1}/Back to Top/{print;flag=0}flag' | grep -v "Back to Top" | sed '/^$/d' | awk 'NR>1 {print $1",,,"}'  >> ${TMPFILE}
+
+done
+
+memberListHeader ${lastUpdateNormalized} > ${LISTS_DIR}/${memberFilename}
+
+# Process Body
+cat ${TMPFILE} | sed '/^$/d'  >> ${LISTS_DIR}/${memberFilename}
+numberRecord=$(wc -l < ${LISTS_DIR}/${memberFilename})
+
+# Finalize
+rm ${LISTS_DIR}/${downloadfile}
+rm ${TMPFILE}
+writeContentData "${shortDesc}" "${longDesc}" "${memberFilename}" "${lastUpdateNormalized}" "${numberRecord}"
+
