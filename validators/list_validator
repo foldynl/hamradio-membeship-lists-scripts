@@ -1,0 +1,23 @@
+#!/bin/bash
+
+if [ -z "$1" ]; then
+  echo "No filename defined for validation"
+  exit 1
+fi
+
+if [ ! -f "$1" ]; then
+  echo "${1}: The input file does not exists"
+  exit 1
+fi
+
+if ! grep -qve '^#' "$1"; then
+  echo "${1}: The file does not contain any data"
+  exit 1
+fi
+
+if ! awk -F ',' 'NR > 2 { if (NF >= 4 && $1 ~ /^[a-zA-Z0-9]+$/ ) {exit 0} else {print "Error Line: " NR ":" $0;exit 1} }' "$1"; then
+  echo "${1}: The file contain an invalid record"
+  exit 1
+fi
+
+exit 0
