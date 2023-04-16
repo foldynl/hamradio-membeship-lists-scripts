@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+
+source lib/generic.sh
+
+### CONFIG
+
+memberFilename="hsc.csv"
+URL=https://hsc.dj1yfk.de/db/hsc_list_n1mm.txt
+shortDesc="HSC"
+longDesc="Radio Telegraphy High Speed Club"
+### END OF CONFIG
+
+downloadfile="${memberFilename}.raw"
+
+# Download file
+downloadRet=$(downloadFile "${URL}" "${downloadfile}")
+
+if [ $downloadRet != 0 ]; then
+    echo "Cannot download a source file from ${URL}"
+    exit 1;
+fi
+
+# Process Header
+lastUpdateNormalized=$(awk '/Updated/ {print $3}' ${LISTS_DIR}/${downloadfile} | sed 's/-//g')
+
+memberListHeader ${lastUpdateNormalized} > ${LISTS_DIR}/${memberFilename}
+
+# Process Body
+cat ${LISTS_DIR}/${downloadfile} |  awk -F',' 'NR>3 {print toupper($1) "," $2 ",,"}' >> ${LISTS_DIR}/${memberFilename}
+numberRecord=$(wc -l < ${LISTS_DIR}/${memberFilename})
+
+# Finalize
+rm ${LISTS_DIR}/${downloadfile}
+writeContentData "${shortDesc}" "${longDesc}" "${memberFilename}" "${lastUpdateNormalized}" "${numberRecord}"
+
