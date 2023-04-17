@@ -3,14 +3,22 @@
 source lib/generic.sh
 
 ### CONFIG
-
-memberFilename="hsc.csv"
-URL=https://hsc.dj1yfk.de/db/hsc_list_n1mm.txt
-shortDesc="HSC"
-longDesc="Radio Telegraphy High Speed Club"
+memberFilenameHSC="hsc.csv"
+memberFilenameVHSC="vhsc.csv"
+memberFilenameSHSC="shsc.csv"
+memberFilenameEHSC="ehsc.csv"
+URL=http://hsc.dj1yfk.de/db/hsc_list_by_number.csv
+shortDescHSC="HSC"
+shortDescVHSC="VHSC"
+shortDescSHSC="SHSC"
+shortDescEHSC="EHSC"
+longDescHSC="Radio Telegraphy High Speed Club"
+longDescVHSC="Radio Telegraphy Very High Speed Club"
+longDescSHSC="Radio Telegraphy Super High Speed Club"
+longDescEHSC="Radio Telegraphy Extremely High Speed Club"
 ### END OF CONFIG
 
-downloadfile="${memberFilename}.raw"
+downloadfile="${memberFilenameHSC}.raw"
 
 # Download file
 downloadRet=$(downloadFile "${URL}" "${downloadfile}")
@@ -21,15 +29,35 @@ if [ $downloadRet != 0 ]; then
 fi
 
 # Process Header
-lastUpdateNormalized=$(awk '/Updated/ {print $3}' ${LISTS_DIR}/${downloadfile} | sed 's/-//g')
+lastUpdateNormalized=$(curl -s https://hsc.dj1yfk.de/db/hsc_list_n1mm.txt | awk '/Updated/ {print $3}'  | sed 's/-//g')
 
-memberListHeader ${lastUpdateNormalized} > ${LISTS_DIR}/${memberFilename}
+memberListHeader ${lastUpdateNormalized} > ${LISTS_DIR}/${memberFilenameHSC}
+memberListHeader ${lastUpdateNormalized} > ${LISTS_DIR}/${memberFilenameVHSC}
+memberListHeader ${lastUpdateNormalized} > ${LISTS_DIR}/${memberFilenameSHSC}
+memberListHeader ${lastUpdateNormalized} > ${LISTS_DIR}/${memberFilenameEHSC}
 
 # Process Body
-cat ${LISTS_DIR}/${downloadfile} |  awk -F',' 'NR>3 {print toupper($1) "," $2 ",,"}' >> ${LISTS_DIR}/${memberFilename}
-numberRecord=$(wc -l < ${LISTS_DIR}/${memberFilename})
+cat ${LISTS_DIR}/${downloadfile} | grep -v -e "^[SR#];" | \
+                awk -F";" -v hscfile="${LISTS_DIR}/${memberFilenameHSC}"  \
+                          -v vhscfile="${LISTS_DIR}/${memberFilenameVHSC}" \
+                          -v shscfile="${LISTS_DIR}/${memberFilenameSHSC}" \
+                          -v ehscfile="${LISTS_DIR}/${memberFilenameEHSC}" ' NR> 1 {
+				                                                      split($8, allcalls, ", ");
+                                                                                      allcalls[length(allcalls)+1] = $2;
+                                                                                      for (i in allcalls)
+                                                                                      {
+                                                                                         if (allcalls[i] == "") continue;
+                                                                                         if ($3 != "-") print toupper(allcalls[i])","$3",," >> hscfile
+                                                                                         if ($4 != "-") print toupper(allcalls[i])","$4",," >> vhscfile
+                                                                                         if ($5 != "-") print toupper(allcalls[i])","$5",," >> shscfile
+                                                                                         if ($6 != "-") print toupper(allcalls[i])","$6",," >> ehscfile
+                                                                                      }
+                                                                                   }'
 
 # Finalize
 rm ${LISTS_DIR}/${downloadfile}
-writeContentData "${shortDesc}" "${longDesc}" "${memberFilename}" "${lastUpdateNormalized}" "${numberRecord}"
+writeContentData "${shortDescHSC}" "${longDescHSC}" "${memberFilenameHSC}" "${lastUpdateNormalized}" "$(wc -l < ${LISTS_DIR}/${memberFilenameHSC})"
+writeContentData "${shortDescVHSC}" "${longDescVHSC}" "${memberFilenameVHSC}" "${lastUpdateNormalized}" "$(wc -l < ${LISTS_DIR}/${memberFilenameVHSC})"
+writeContentData "${shortDescSHSC}" "${longDescSHSC}" "${memberFilenameSHSC}" "${lastUpdateNormalized}" "$(wc -l < ${LISTS_DIR}/${memberFilenameSHSC})"
+writeContentData "${shortDescEHSC}" "${longDescEHSC}" "${memberFilenameEHSC}" "${lastUpdateNormalized}" "$(wc -l < ${LISTS_DIR}/${memberFilenameEHSC})"
 
