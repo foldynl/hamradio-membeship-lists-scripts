@@ -15,6 +15,20 @@ if ! grep -qve '^#' "$1"; then
   exit 1
 fi
 
+file_head=$(head -n 2 $1)
+
+if ! date -d "$(echo "$file_head" | head -n 1 | sed 's/# //g')" +%Y%m%d >/dev/null 2>&1; then
+    echo "The file does not containt date on the first line in the format YYYYMMDD"
+    exit 1
+fi
+
+second_line=$(echo "$file_head" | tail -n 1)
+
+if [ "$second_line" != "callsign,member_id,valid_from,valid_to" ]; then
+    echo "The file does not contain a valid CSV Header"
+    exit 1
+fi
+
 if ! awk -F ',' 'NR > 2 { if (NF >= 4 && $1 ~ /^[a-zA-Z0-9]+$/ ) {exit 0} else {print "Error Line: " NR ":" $0;exit 1} }' "$1"; then
   echo "${1}: The file contain an invalid record"
   exit 1
