@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+
+source lib/generic.sh
+
+### CONFIG
+memberFilename="ecwarc.csv"
+URL="https://essexcw.uk/membership-directory/"
+shortDesc="ECWARC"
+longDesc="Essex CW Amateur Radio Club"
+### END OF CONFIG
+
+downloadfile="${memberFilename}.raw"
+
+# Download file
+downloadRet=$(downloadFile "${URL}" "${downloadfile}")
+
+if [ $downloadRet != 0 ]; then
+    echo "Cannot download a source file from ${URL}"
+    exit 1;
+fi
+
+# Process Header
+# Based on the web information, the records are updated at the end of each month
+lastUpdateNormalized=$(date +%Y%m%d)
+
+memberListHeader ${lastUpdateNormalized} > ${LISTS_DIR}/${memberFilename}
+
+# Process Body
+cat ${LISTS_DIR}/${downloadfile} | ./lib/html2csv.py -d ";" | sed '/^$/d'  | grep -v ";;;;"  | awk -F";" 'NR>1{split($3, allcalls, "/"); for (i in allcalls) { print toupper(allcalls[i])","$1",,"}}' >> ${LISTS_DIR}/${memberFilename}
+numberRecord=$(wc -l < ${LISTS_DIR}/${memberFilename})
+
+# Finalize
+rm ${LISTS_DIR}/${downloadfile}
+writeContentData "${shortDesc}" "${longDesc}" "${memberFilename}" "${lastUpdateNormalized}" "${numberRecord}"
+
