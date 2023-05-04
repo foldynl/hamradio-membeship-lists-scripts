@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+
+source lib/generic.sh
+
+### CONFIG
+
+memberFilename="ntc.csv"
+URL="https://pi4ntc.nl/wp-admin/admin-ajax.php"
+shortDesc="NTC"
+longDesc="Netherlands Telegraphy Club"
+### END OF CONFIG
+
+downloadfile="${memberFilename}.raw"
+
+curl ${URL} -L -s -H 'Content-Type: application/x-www-form-urlencoded; charset=UTF-8'  -H 'X-Requested-With: XMLHttpRequest'  --data-raw 'action=memberlist' --output ${LISTS_DIR}/${downloadfile}
+
+# Download file
+downloadRet=$?
+
+if [ $downloadRet != 0 ]; then
+    echo "Cannot download a source file from ${URL}"
+    exit 1;
+fi
+
+# Process Header
+# Based on the web information, the records are updated at the end of each month
+lastUpdateNormalized=$(date +%Y%m%d)
+
+memberListHeader ${lastUpdateNormalized} > ${LISTS_DIR}/${memberFilename}
+
+# Process Body
+cat ${LISTS_DIR}/${downloadfile}  | tr -d "\n" | tr -d "\t"| tr "|" "\n" | \
+                                   awk -F"," 'function ltrim(s) { sub(/^[ \t\r\n]+/, "", s); return s }
+                                              function rtrim(s) { sub(/[ \t\r\n]+$/, "", s); return s }
+                                              function trim(s)  { return rtrim(ltrim(s)); }
+                                              {
+                                                allcalls[0] = trim($3);
+                                                allcalls[1] = trim($4);
+                                                for (i in allcalls)
+                                                {
+                                                    if (allcalls[i] == "") continue;
+                                                    print toupper(allcalls[i]","$2","trim($5)",")
+                                                }
+                                              }' >> ${LISTS_DIR}/${memberFilename}
+numberRecord=$(wc -l < ${LISTS_DIR}/${memberFilename})
+
+# Finalize
+rm ${LISTS_DIR}/${downloadfile}
+writeContentData "${shortDesc}" "${longDesc}" "${memberFilename}" "${lastUpdateNormalized}" "${numberRecord}"
+
