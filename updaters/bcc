@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+
+source lib/generic.sh
+
+### CONFIG
+
+memberFilename="bcc.csv"
+URL="https://www.bavarian-contest-club.de/data/bcc-members.txt"
+shortDesc="BCC"
+longDesc="Bavarian Contest Club"
+### END OF CONFIG
+
+downloadfile="${memberFilename}.raw"
+
+# Download file
+downloadRet=$(downloadFile "${URL}" "${downloadfile}")
+
+if [ $downloadRet != 0 ]; then
+    echo "Cannot download a source file from ${URL}"
+    exit 1;
+fi
+
+# Process Header
+# Based on the web information, the records are updated at the end of each month
+lastUpdateNormalized=$(curl -s -L -A "user-agent-name QLog" "https://www.bavarian-contest-club.de/mitglieder/" | grep "Zuletzt aktualisiert" | awk '{print $3}' | awk -F"." '{print$3$2$1}')
+
+memberListHeader ${lastUpdateNormalized} > ${LISTS_DIR}/${memberFilename}
+
+# Process Body
+cat ${LISTS_DIR}/${downloadfile} | awk -F"," 'NR>2 {print $1",,,"}'  >> ${LISTS_DIR}/${memberFilename}
+numberRecord=$(wc -l < ${LISTS_DIR}/${memberFilename})
+
+# Finalize
+rm ${LISTS_DIR}/${downloadfile}
+writeContentData "${shortDesc}" "${longDesc}" "${memberFilename}" "${lastUpdateNormalized}" "${numberRecord}"
+
