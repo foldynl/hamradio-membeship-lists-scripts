@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+
+source lib/generic.sh
+
+### CONFIG
+
+memberFilename="arlhs.csv"
+URL="https://arlhs.com/roster/"
+URL1="https://arlhs.com/roster/index.php?m=b"
+shortDesc="ARLHS"
+longDesc="Amateur Radio Lighthouse Society"
+### END OF CONFIG
+
+downloadfile="${memberFilename}.raw"
+downloadfile1="${memberFilename}_url1.raw"
+
+# Download file
+downloadRet=$(downloadFile "${URL}" "${downloadfile}")
+downloadRet1=$(downloadFile "${URL1}" "${downloadfile1}")
+
+if [ $downloadRet != 0 ]; then
+    echo "Cannot download a source file from ${URL}"
+    exit 1;
+fi
+
+if [ $downloadRet1 != 0 ]; then
+    echo "Cannot download a source file from ${URL1}"
+    exit 1;
+fi
+
+# Process Header
+# Based on the web information, the records are updated at the end of each month
+lastUpdateNormalized=$(date +%Y%m%d)
+
+memberListHeader ${lastUpdateNormalized} > ${LISTS_DIR}/${memberFilename}
+
+# Process Body
+# Hack - EMERITUS
+echo "W7QF,2,," >> ${LISTS_DIR}/${memberFilename}
+cat ${LISTS_DIR}/${downloadfile} | ./lib/html2csv.py -d ";" | awk -F";" 'function ltrim(s) { sub(/^[ \t\r\n]+/, "", s); return s } function rtrim(s) { sub(/[ \t\r\n]+$/, "", s); return s } function trim(s)  { return rtrim(ltrim(s))} ; NR>2{print trim($2)","$1",,"}' >> ${LISTS_DIR}/${memberFilename}
+
+cat ${LISTS_DIR}/${downloadfile1} | ./lib/html2csv.py -d ";" | awk -F";" 'function ltrim(s) { sub(/^[ \t\r\n]+/, "", s); return s } function rtrim(s) { sub(/[ \t\r\n]+$/, "", s); return s } function trim(s)  { return rtrim(ltrim(s))} ; NR>2{print trim($2)","$1",,"}' >> ${LISTS_DIR}/${memberFilename}
+
+numberRecord=$(wc -l < ${LISTS_DIR}/${memberFilename})
+
+# Finalize
+rm ${LISTS_DIR}/${downloadfile}
+rm ${LISTS_DIR}/${downloadfile1}
+
+writeContentData "${shortDesc}" "${longDesc}" "${memberFilename}" "${lastUpdateNormalized}" "${numberRecord}"
+
