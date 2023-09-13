@@ -37,9 +37,9 @@ memberListHeader ${lastUpdateNormalized} > ${LISTS_DIR}/${memberFilename}
 # Process Body
 # Hack - EMERITUS
 echo "W7QF,2,," >> ${LISTS_DIR}/${memberFilename}
-cat ${LISTS_DIR}/${downloadfile} | ./lib/html2csv.py -d ";" | awk -F";" 'function ltrim(s) { sub(/^[ \t\r\n]+/, "", s); return s } function rtrim(s) { sub(/[ \t\r\n]+$/, "", s); return s } function trim(s)  { return rtrim(ltrim(s))} ; NR>2{print trim($2)","$1",,"}' >> ${LISTS_DIR}/${memberFilename}
+cat ${LISTS_DIR}/${downloadfile} | iconv -cs -f utf8 -t utf8//TRANSLIT | ./lib/html2csv.py -d ";" | awk -F";" 'function ltrim(s) { sub(/^[ \t\r\n]+/, "", s); return s } function rtrim(s) { sub(/[ \t\r\n]+$/, "", s); return s } function trim(s)  { return rtrim(ltrim(s))} ; NR>2{print trim($2)","$1",,"}' >> ${LISTS_DIR}/${memberFilename}
 
-cat ${LISTS_DIR}/${downloadfile1} | ./lib/html2csv.py -d ";" | awk -F";" 'function ltrim(s) { sub(/^[ \t\r\n]+/, "", s); return s } function rtrim(s) { sub(/[ \t\r\n]+$/, "", s); return s } function trim(s)  { return rtrim(ltrim(s))} ; NR>2{print trim($2)","$1",,"}' >> ${LISTS_DIR}/${memberFilename}
+cat ${LISTS_DIR}/${downloadfile1} | iconv -cs -f utf8 -t utf8//TRANSLIT | ./lib/html2csv.py -d ";" | awk -F";" 'function ltrim(s) { sub(/^[ \t\r\n]+/, "", s); return s } function rtrim(s) { sub(/[ \t\r\n]+$/, "", s); return s } function trim(s)  { return rtrim(ltrim(s))} ; NR>2{print trim($2)","$1",,"}' >> ${LISTS_DIR}/${memberFilename}
 
 numberRecord=$(wc -l < ${LISTS_DIR}/${memberFilename})
 
