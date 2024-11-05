@@ -5,7 +5,7 @@ source lib/generic.sh
 ### CONFIG
 
 memberFilename="foc.csv"
-URL=https://cloud.g4foc.org/index.php/s/NaIGpg63PzVEUGJ/download
+URL=https://g4foc.org/wp-content/uploads/tylerdata/Current.txt
 shortDesc="FOC"
 longDesc="First Class CW Operators"
 ### END OF CONFIG
