@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+
+source lib/generic.sh
+### CONFIG
+
+memberFilename="ft8dmc.csv"
+URL=https://epc-mc.de/FT8DMC.php
+shortDesc="FT8DMC"
+longDesc="FT8DMC"
+### END OF CONFIG
+
+downloadfile="${memberFilename}.raw"
+
+# Download file
+downloadRet=$(downloadFile "${URL}" "${downloadfile}")
+
+if [ $downloadRet != 0 ]; then
+    echo "Cannot download a source file from ${URL}"
+    exit 1;
+fi
+
+# Process Header
+lastUpdateNormalized=$(date +"%Y%m%d")
+
+memberListHeader ${lastUpdateNormalized} > ${LISTS_DIR}/${memberFilename}
+
+# Process Body
+cat ${LISTS_DIR}/${downloadfile} | awk -F";" '{print toupper($2) "," $1 ",,"}' >> ${LISTS_DIR}/${memberFilename}
+numberRecords=$(wc -l < ${LISTS_DIR}/${memberFilename})
+
+# Finalize
+rm ${LISTS_DIR}/${downloadfile}
+writeContentData "${shortDesc}" "${longDesc}" "${memberFilename}" "${lastUpdateNormalized}" "${numberRecords}"
+
