@@ -27,7 +27,12 @@ lastUpdateNormalized=$(date +%Y%m%d)
 memberListHeader ${lastUpdateNormalized} > ${LISTS_DIR}/${memberFilename}
 
 # Process Body
-cat ${LISTS_DIR}/${downloadfile} | awk -F"|" 'NR>2 {print toupper($1)",,,"}' >> ${LISTS_DIR}/${memberFilename}
+awk -F"|" 'NR>2 {
+    gsub(/[^[:print:]]/, "", $1);
+    gsub(/[[:space:]]/, "", $1);
+    print toupper($1) ",,,"
+}' "${LISTS_DIR}/${downloadfile}" >> "${LISTS_DIR}/${memberFilename}"
+
 numberRecord=$(wc -l < ${LISTS_DIR}/${memberFilename})
 
 # Finalize
