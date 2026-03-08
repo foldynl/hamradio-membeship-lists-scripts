@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+
+source lib/generic.sh
+
+### CONFIG
+
+memberFilename="smc.csv"
+URL="https://docs.google.com/spreadsheets/d/e/2PACX-1vQflcU32JBZRM7yEG_jdkGGGIAMb6t2os6p60bHo23V3REzt-V1xw8ISC7_pdCFD8Efvo01Bse9qaVS/pub?gid=21147078&single=true&output=csv"
+shortDesc="SMC"
+longDesc="Society of Midwest Contesters"
+### END OF CONFIG
+
+downloadfile="${memberFilename}.raw"
+
+# Download file
+downloadRet=$(downloadFile "${URL}" "${downloadfile}")
+
+if [ $downloadRet != 0 ]; then
+    echo "Cannot download a source file from ${URL}"
+    exit 1;
+fi
+
+# Process Header
+# Based on the web information, the records are updated at the end of each month
+lastUpdateNormalized=$(date +%Y%m%d)
+
+memberListHeader ${lastUpdateNormalized} > ${LISTS_DIR}/${memberFilename}
+
+# Process Body
+cat ${LISTS_DIR}/${downloadfile} | awk -F"," 'NR>1 {print toupper($1)",,,"}' | grep '^[A-Za-z]' >> ${LISTS_DIR}/${memberFilename}
+numberRecord=$(wc -l < ${LISTS_DIR}/${memberFilename})
+
+# Finalize
+rm ${LISTS_DIR}/${downloadfile}
+writeContentData "${shortDesc}" "${longDesc}" "${memberFilename}" "${lastUpdateNormalized}" "${numberRecord}"
+
