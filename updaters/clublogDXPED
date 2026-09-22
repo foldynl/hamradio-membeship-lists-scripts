@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+
+source lib/generic.sh
+
+### CONFIG
+memberFilename="clublogDXPED.csv"
+URL="https://clublog.org/expeditions.php?api=1"
+shortDesc="ClubLogDXPED"
+longDesc="Clublog DX Expeditions"
+### END OF CONFIG
+jsonfile="clublog_dxped.json"
+
+# Download file
+jsonRet=$(downloadFile "${URL}" "${jsonfile}")
+if [ $jsonRet != 0 ]; then
+    echo "Cannot download a source file from ${URL}"
+    exit 1
+fi
+
+# Normalize date for header
+lastUpdateNormalized=$(date +"%Y%m%d")
+
+# Write header
+memberListHeader "${lastUpdateNormalized}" > "${LISTS_DIR}/${memberFilename}"
+
+jq -r --arg cutoff "$(date -u -d '12 months ago' '+%Y-%m-%d %H:%M:%S')" '.[] | select(.[1] >= $cutoff) | "\(.[0]),,,"' ${LISTS_DIR}/${jsonfile} >> "${LISTS_DIR}/${memberFilename}"
+
+# Count lines
+numberRecord=$(wc -l < "${LISTS_DIR}/${memberFilename}")
+
+# Cleanup
+rm -f "${LISTS_DIR}/${jsonfile}"
+
+# Write metadata
+writeContentData "${shortDesc}" "${longDesc}" "${memberFilename}" "${lastUpdateNormalized}" "${numberRecord}"
+
